@@ -1,0 +1,6 @@
+[submodule "leptonica/src/main/cpp/leptonica/src"]
+	path = leptonica/src/main/cpp/leptonica/src
+	url = https://github.com/DanBloomberg/leptonica
+[submodule "leptonica/src/main/cpp/libpng/src"]
+	path = leptonica/src/main/cpp/libpng/src
+	url = https://git.code.sf.net/p/libpng/code

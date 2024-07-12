@@ -1,0 +1,110 @@
+plugins {
+	id 'com.android.library'
+	id 'maven-publish'
+}
+
+android {
+	namespace 'cz.adaptech.thirdparty.leptonica'
+	compileSdk 34
+	ndkVersion rootProject.ext.ndkVersion
+
+	defaultConfig {
+		minSdk 19
+
+		testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+		consumerProguardFiles "consumer-rules.pro"
+		externalNativeBuild {
+			cmake {
+				cppFlags ''
+				arguments "-DANDROID_STL=c++_shared"
+			}
+		}
+	}
+
+	buildTypes {
+		release {
+			minifyEnabled false
+			proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+		}
+		debug {
+			externalNativeBuild {
+				cmake {
+					// Force building release version of native libraries even in debug variant.
+					// This is for projects that has direct dependency on this library,
+					// but doesn't really want its debug version, which is very slow.
+					// Note that this only affects native code.
+					arguments += "-DCMAKE_BUILD_TYPE=Release"
+				}
+			}
+		}
+	}
+	compileOptions {
+		sourceCompatibility JavaVersion.VERSION_17
+		targetCompatibility JavaVersion.VERSION_17
+	}
+	buildFeatures {
+		prefabPublishing true
+	}
+	prefab {
+		leptonica {
+			headers "src/main/cpp/leptonica/include"
+		}
+//		jpeg {
+//			headers "src/main/cpp/libjpeg/include"
+//		}
+//		pngx {
+//			headers "src/main/cpp/libpng/include"
+//		}
+	}
+	externalNativeBuild {
+		cmake {
+			path file('src/main/cpp/CMakeLists.txt')
+			version rootProject.ext.cmakeVersion
+		}
+	}
+	publishing {
+		singleVariant("release") {
+			// There is no Java code in leptonica-prefab
+//			withSourcesJar()
+//			withJavadocJar()
+		}
+	}
+	packagingOptions {
+		jniLibs {
+			// Avoid packing the unnecessary libraries into final AAR. For details
+			// refer to https://issuetracker.google.com/issues/168777344#comment5
+			// Note that if your AAR also contains Java/Kotlin APIs, you should not
+			// exclude libraries that are used by those APIs.
+			excludes += [
+					'**/libc++_shared.so',
+					'**/libleptonica.so',
+			]
+		}
+	}
+}
+
+dependencies {
+	// Intentionally use old version of annotation library which doesn't depend on kotlin-stdlib
+	// to not unnecessarily complicate client projects due to potential duplicate class build errors
+	// caused by https://kotlinlang.org/docs/whatsnew18.html#updated-jvm-compilation-target
+	//noinspection GradleDependency
+	implementation 'androidx.annotation:annotation:1.3.0'
+
+	testImplementation 'junit:junit:4.13.2'
+	androidTestImplementation 'androidx.test.ext:junit:1.2.1'
+	androidTestImplementation 'androidx.test.espresso:espresso-core:3.6.1'
+}
+
+afterEvaluate {
+	publishing {
+		publications {
+			standard(MavenPublication) {
+				from components.release
+
+				groupId 'cz.adaptech.thirdparty'
+				artifactId 'leptonica'
+				version rootProject.ext.leptonicaVersion
+			}
+		}
+	}
+}
